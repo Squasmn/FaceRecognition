@@ -108,7 +108,7 @@ const AppContent = () => {
   useEffect(() => {
     if (imageUrl) {
       console.log("imageUrl:", imageUrl);
-      const PAT = "85cc4e2c6420437280743173c3f890f5";
+      const PAT = process.env.REACT_APP_CLARIFY_API_KEY;
       const USER_ID = "clarifai";
       const APP_ID = "main";
       const MODEL_ID = "face-detection";
