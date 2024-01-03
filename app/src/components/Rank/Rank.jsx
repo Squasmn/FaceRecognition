@@ -7,7 +7,9 @@ const Rank = ({ name, entries }) => {
       <div className="white f3 center ">
         {`${name}, your current entry count is...`}
       </div>
-      <div className="white f1 center">{entries}</div>
+      <div className="white f1 center">
+        {isNaN(entries) ? "No entries yet" : entries}
+      </div>
     </div>
   );
 };

@@ -12,7 +12,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
-// Middleware for setting headers
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
@@ -22,7 +21,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Use the routes from user.route.js
 app.use(userRoutes);
 
 app.post("/imageurl", async (req, res) => {

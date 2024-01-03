@@ -24,7 +24,6 @@ const NavigationWrapper = ({ isSignedIn, handleSignOut }) => {
 
 NavigationWrapper.propTypes = {
   isSignedIn: PropTypes.bool.isRequired,
-  handleSignIn: PropTypes.func.isRequired,
   handleSignOut: PropTypes.func.isRequired,
 };
 
@@ -44,7 +43,7 @@ const AppContent = () => {
 
   const loadUser = (data) => {
     setUser({
-      id: data.id,
+      id: data._id,
       name: data.name,
       email: data.email,
       entries: data.entries,
@@ -60,27 +59,23 @@ const AppContent = () => {
   const handleSignOut = () => {
     setIsSignedIn(false);
     navigate("/signin");
+
+    // Reset state
+    setInput("");
+    setImageUrl("");
+    setFaceBoxes([]);
+    setUser({
+      id: "",
+      name: "",
+      email: "",
+      entries: 0,
+      joined: "",
+    });
   };
 
   const handleRegister = (newUser) => {
     setUser(newUser);
     setIsSignedIn(true);
-  };
-  console.log("users:", user);
-
-  const calculateFaceLocation = (data) => {
-    return data.outputs[0].data.regions.map((region) => {
-      const clarifaiFace = region.region_info.bounding_box;
-      const image = document.getElementById("inputimage");
-      const width = Number(image.width);
-      const height = Number(image.height);
-      return {
-        leftCol: clarifaiFace.left_col * width,
-        topRow: clarifaiFace.top_row * height,
-        rightCol: width - clarifaiFace.right_col * width,
-        bottomRow: height - clarifaiFace.bottom_row * height,
-      };
-    });
   };
 
   const displayFaceBoxes = (boxes) => {
@@ -90,90 +85,39 @@ const AppContent = () => {
   const onSubmit = () => {
     setImageUrl(input);
     fetch("http://localhost:3000/image", {
-      method: "put",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: user.id,
-      }),
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: user.id, imageUrl: input }),
     })
       .then((response) => response.json())
-      .then((count) => {
-        setUser((prevState) => {
-          return { ...prevState, entries: count };
+      .then((data) => {
+        if (data.entries) {
+          setUser((prevState) => ({ ...prevState, entries: data.entries }));
+        }
+        return fetch("http://localhost:3000/imageurl", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ input }),
         });
+      })
+      .then((response) => response.json())
+      .then((faceLocations) => {
+        displayFaceBoxes(faceLocations);
       })
       .catch(console.log);
   };
 
   useEffect(() => {
-    if (imageUrl) {
-      console.log("imageUrl:", imageUrl);
-      const PAT = process.env.REACT_APP_CLARIFY_API_KEY;
-      const USER_ID = "clarifai";
-      const APP_ID = "main";
-      const MODEL_ID = "face-detection";
-      const MODEL_VERSION_ID = "6dc7e46bc9124c5c8824be4822abe105";
-      const IMAGE_URL = imageUrl;
-      console.log("IMAGE_URL:", IMAGE_URL);
-
-      const raw = JSON.stringify({
-        user_app_id: {
-          user_id: USER_ID,
-          app_id: APP_ID,
-        },
-        inputs: [
-          {
-            data: {
-              image: {
-                url: IMAGE_URL,
-              },
-            },
-          },
-        ],
-      });
-
-      const requestOptions = {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          Authorization: "Key " + PAT,
-        },
-        body: raw,
-      };
-
-      fetch(
-        "https://api.clarifai.com/v2/models/" +
-          MODEL_ID +
-          "/versions/" +
-          MODEL_VERSION_ID +
-          "/outputs",
-        requestOptions
-      )
-        .then((response) => {
-          if (!response.ok) {
-            return response.json().then((error) => {
-              throw new Error(JSON.stringify(error));
-            });
-          }
-          return response.json();
-        })
-        .then((result) => {
-          if (result.outputs && result.outputs.length > 0) {
-            console.log(result.outputs[0].data.regions);
-            const faceLocations = calculateFaceLocation(result); // Calculate face locations
-            displayFaceBoxes(faceLocations); // Update faceBoxes state
-          } else {
-            console.error("Error: No outputs found in response");
-          }
-        })
-        .catch((error) => {
-          console.log("Error:", error);
-        });
-    }
-  }, [imageUrl]);
+    setImageUrl(input);
+  }, [input]);
 
   const handleInputChange = (event) => {
     setInput(event.target.value);
+    setFaceBoxes([]); // Reset faceBoxes state
   };
 
   return (
@@ -181,7 +125,6 @@ const AppContent = () => {
       <ParticlesBg color="#800080" num={150} type="cobweb" bg={true} />
       <NavigationWrapper
         isSignedIn={isSignedIn}
-        handleSignIn={handleSignIn}
         handleSignOut={handleSignOut}
       />
 

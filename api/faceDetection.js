@@ -1,7 +1,8 @@
 import fetch from "node-fetch";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ path: "../.env" });
+console.log(dotenv.config({ path: "../.env" }));
 
 const calculateFaceLocation = (data) => {
   return data.outputs[0].data.regions.map((region) => {
@@ -17,6 +18,7 @@ const calculateFaceLocation = (data) => {
 
 const callClarifaiApi = async (imageUrl) => {
   const PAT = process.env.CLARIFAI_API_KEY;
+
   const USER_ID = "clarifai";
   const APP_ID = "main";
   const MODEL_ID = "face-detection";

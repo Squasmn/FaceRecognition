@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { User } from "../models/user.model.js";
+import { callClarifaiApi, calculateFaceLocation } from "../faceDetection.js";
 
 export const getUsers = async (req, res) => {
   try {
@@ -29,7 +30,13 @@ export const signin = async (req, res) => {
           return res.status(500).json("Error comparing passwords");
         }
         if (result) {
-          res.json(user);
+          res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            entries: user.entries,
+            joined: user.joined,
+          });
         } else {
           res.status(400).json("Incorrect password");
         }
@@ -79,18 +86,45 @@ export const getProfile = async (req, res) => {
 };
 
 export const updateImage = async (req, res) => {
-  const { id } = req.body;
+  const { id, imageUrl } = req.body;
+
+  // Check if id and imageUrl are provided
+  if (!id || !imageUrl) {
+    console.log("Missing id or imageUrl"); // Log if id or imageUrl is missing
+    return res.status(400).json({ message: "Missing id or imageUrl" });
+  }
 
   try {
     const user = await User.findById(id);
+    console.log("User:", user); // Log the user object
+
     if (user) {
       user.entries++;
+      console.log("User after incrementing entries:", user); // Log the user object after incrementing entries
+
       await user.save();
-      res.json(user.entries);
+
+      // Call the Clarifai API and calculate the face locations
+      let data;
+      try {
+        data = await callClarifaiApi(imageUrl);
+      } catch (error) {
+        console.log("Error calling Clarifai API:", error); // Log the error from the Clarifai API call
+        return res
+          .status(500)
+          .json({ message: "Error calling Clarifai API: " + error.message });
+      }
+
+      const faceLocations = calculateFaceLocation(data);
+
+      // Return the updated entries count and the face locations
+      res.json({ entries: user.entries, faceLocations });
     } else {
-      res.status(404).json("No such user");
+      console.log("User not found"); // Log if the user is not found
+      res.status(404).json({ message: "User not found" });
     }
   } catch (error) {
+    console.log("Error in updateImage:", error); // Log any errors that occur during the function
     res.status(500).json({ message: error.message });
   }
 };

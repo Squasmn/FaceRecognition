@@ -5,8 +5,7 @@ const ImageLinkForm = ({ onInputChange, onSubmit }) => {
   return (
     <div>
       <p className="center f3 pa5 white">
-        This App will detect faces. Rank is updated according to the amount of
-        usages. You can be #1!
+        This App detects faces in your pictures. Give it a try!
       </p>
       <div className="center">
         <div className={`${styles.form} center pa4 br3 shadow-5`}>
